@@ -15,36 +15,60 @@ def handle_inputs():
 
 
 def retrieve_results():
-    request_url = "https://www.googleapis.com/customsearch/v1?key=" + API_KEY + "&cx=" + ENG_ID + "&q=" + QUERY
+    request_url = "https://www.googleapis.com/customsearch/v1?key=/v1?q={QUERY}&key={API_KEY}&cx={ENG_ID}&num=10"
     resp = requests.get(request_url)
     raw_search_results = json.loads(resp.text)['items']
     results = []
 
-    for i in range(0, 10):
+    for i in raw_search_results:
         result = {
-            'URL': raw_search_results[i]['link'],
-            'Title': raw_search_results[i]['title'],
-            'Summary': raw_search_results[i]['snippet']
+            'URL': i['link'],
+            'Title': i['title'],
+            'Summary': i['snippet']
         }
         results.append(result)
 
     return results
 
 
-# def collect_feedbacks():
-#
-# def modify_query():
+def feedbacks():
+    res = retrieve_results()
+    count = 0
+    rel = 0
+    for item in res:
+        count += 1
+        print("Result " + str(count))
+        print("[")
+        print(" URL: " + item['url'])
+        print(" Title: " + item['title'])
+        print(" Summary: " + item['summary'])
+        print("]")
+
+        feedback = input("Relevant(Y/N)? ")
+        if feedback == 'Y' or feedback == 'y':
+            item['relevant'] = True
+            rel += 1
+        if feedback == 'N' or feedback == 'n':
+            item['relevant'] = False
+        print("")
+
+    return res, rel/10
+
+
+def modify_query():
+    pass
+
 
 def main():
     handle_inputs()
-    results = retrieve_results()
-    # actual_precision = collect_feedbacks(results)
-    #
-    # while actual_precision < DESIRED_PRECISION or actual_precision != 0:
-    #     # Query expansion techniques
-    #     modify_query()
-    #     results = retrieve_results()
-    #     actual_precision = collect_feedbacks(results)
+    info, actual_precision = feedbacks()
+
+    while actual_precision < DESIRED_PRECISION or actual_precision != 0:
+        # Query expansion techniques
+        print("Still below the desired precision of " + str(DESIRED_PRECISION))
+        modify_query()
+        info, actual_precision = feedbacks()
+    print("Desired precision reached, done")
 
 
 if __name__ == '__main__':
