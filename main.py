@@ -130,7 +130,7 @@ def rocchio_algo(results, tf_idf):
     1. Construct the original query vector
     2. Calculate the mean of positive feedback from relevant docs
     3. Calculate the mean of negative feedback from non-relevant docs
-    4. Calcualte the modified query vector
+    4. Calculate the modified query vector
     :param results: search result set
     :param tf_idf: weighting scheme
     :return: modified query vector
