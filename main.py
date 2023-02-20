@@ -170,6 +170,7 @@ def print_summary(actual_precision, new_words):
     if actual_precision < DESIRED_PRECISION:
         print("Still below the desired precision of " + str(DESIRED_PRECISION))
         print("Indexing results ....")
+        print("Indexing results ....")
         print("Augmenting by " + " ".join(str(word) for word in new_words))
     else:
         print("Desired precision reached, done")
