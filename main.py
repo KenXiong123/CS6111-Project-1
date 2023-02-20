@@ -41,7 +41,7 @@ def retrieve_results():
     return results
 
 
-def feedbacks():
+def relevance_feedbacks():
     """
     Collect user feedbacks on relevance
     :return: Search result array and overall actual precision rate
@@ -49,6 +49,13 @@ def feedbacks():
     res = retrieve_results()
     count = 0
     rel = 0
+    print("Parameters:")
+    print("Client key = " + API_KEY)
+    print("Engine key = " + ENG_ID)
+    print("Query      = " + QUERY)
+    print("Precision  = " + str(DESIRED_PRECISION))
+    print("Google Search Results:")
+    print("======================")
     for item in res:
         count += 1
         print("Result " + str(count))
@@ -79,6 +86,7 @@ def improve_query(res):
     :return: void
     """
     # Step 1
+    global QUERY
     original_query = QUERY.split()
     collection = []
     for result in res:
@@ -90,9 +98,31 @@ def improve_query(res):
     tf_idf = vectorizer.fit_transform(collection)
 
     # Step 3
-    # modified_query = rocchio_algo(res, tf_idf)
+    modified_query = rocchio_algo(res, tf_idf)
 
     # Step 4
+    modified_query_sorted = np.sort(modified_query)[::-1]
+    tokens = vectorizer.get_feature_names_out()
+    modified_query_weights = {}
+    for i in range(len(tokens)):
+        modified_query_weights[modified_query[i]] = tokens[i]
+
+    max_new_words = 2
+    new_query = original_query
+    new_words = []
+    for j in range(len(modified_query_sorted)):
+        word = modified_query_weights.get(modified_query_sorted[j])
+        if word in original_query:
+            continue
+        else:
+            new_query.append(word)
+            new_words.append(word)
+            max_new_words -= 1
+        if max_new_words == 0:
+            break
+    QUERY = " ".join(str(word) for word in new_query)
+
+    return new_words
 
 
 def rocchio_algo(results, tf_idf):
@@ -131,21 +161,36 @@ def rocchio_algo(results, tf_idf):
 
     return modified_q_vec
 
+
+def print_summary(actual_precision, new_words):
+    print("======================")
+    print("FEEDBACK SUMMARY")
+    print("Query " + QUERY)
+    print("Precision " + str(actual_precision))
+    if actual_precision < DESIRED_PRECISION:
+        print("Still below the desired precision of " + str(DESIRED_PRECISION))
+        print("Indexing results ....")
+        print("Augmenting by " + " ".join(str(word) for word in new_words))
+    else:
+        print("Desired precision reached, done")
+
+
 def main():
     handle_inputs()
-    res, actual_precision = feedbacks()
+    res, actual_precision = relevance_feedbacks()
     if len(res) < 10:
         print('Fewer than 10 results in the first iteration. Please search again!')
         quit()
     if actual_precision == 0:
         print("Below desired precision, but can no longer augment the query")
         quit()
+    new_words = []
     while actual_precision < DESIRED_PRECISION:
         # Query expansion techniques
-        print("Still below the desired precision of " + str(DESIRED_PRECISION))
-        improve_query(res)
-        res, actual_precision = feedbacks()
-    print("Desired precision reached, done")
+        new_words = improve_query(res)
+        print_summary(actual_precision, new_words)
+        res, actual_precision = relevance_feedbacks()
+    print_summary(actual_precision, new_words)
 
 
 if __name__ == '__main__':
